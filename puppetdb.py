@@ -79,7 +79,8 @@ class PuppetdbInventory(object):
             'timeout': self.config.get('timeout'),
             'ssl_verify': self.config.get('ssl_verify'),
             'ssl_key': self.config.get('ssl_key') or None,
-            'ssl_cert': self.config.get('ssl_cert') or None
+            'ssl_cert': self.config.get('ssl_cert') or None,
+            'token': self.config.get('token') or None
         }
 
         self.puppetdb = connect(**puppetdb_config)
@@ -163,22 +164,34 @@ class PuppetdbInventory(object):
         groups['all']['hosts'] = list()
 
         group_by = self.config.get('group_by')
+        group_by_total = group_by.split(',')
         group_by_tag = self.config.get('group_by_tag')
+        create_unknown_group = self.config.get('create_unknown_group')
+        full_group_names = self.config.get('full_group_names')
 
         for node in self.puppetdb.nodes():
             server = str(node)
+            groups['all']['hosts'].append(server)
 
             if group_by is not None:
                 try:
-                    fact_value = node.fact(group_by).value
-                    if fact_value not in groups:
-                        groups[fact_value]['hosts'] = list()
-                    groups[fact_value]['hosts'].append(server)
+                    for item in group_by_total:
+                        fact_name = item
+                        fact_value = node.fact(item).value
+                        if full_group_names:
+                            group_name = "{0}-{1}".format(fact_name, fact_value)
+                        else:
+                            group_name = fact_value
+
+                        if group_name not in groups:
+                            groups[group_name]['hosts'] = list()
+                        groups[group_name]['hosts'].append(server)
                 except StopIteration:
                     # This fact does not exist on the server
-                    if 'unknown' not in groups:
-                        groups['unknown']['hosts'] = list()
-                    groups['unknown']['hosts'].append(server)
+                    if create_unknown_group:
+                        if 'unknown' not in groups:
+                            groups['unknown']['hosts'] = list()
+                        groups['unknown']['hosts'].append(server)
 
             if group_by_tag:
                 for entry in group_by_tag:
@@ -191,7 +204,6 @@ class PuppetdbInventory(object):
                                 groups[group_key]['hosts'] = list()
                             groups[group_key]['hosts'].append(server)
 
-            groups['all']['hosts'].append(server)
             hostvars[server] = self.fetch_host_facts(server)
             groups['_meta'] = {'hostvars': hostvars}
 
@@ -228,3 +240,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

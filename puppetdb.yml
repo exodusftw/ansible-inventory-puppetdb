@@ -9,9 +9,12 @@
 # - ssl_verify: Whether or not to verify SSL certificate
 # - ssl_key: Path to SSL client key
 # - ssl_cert: Path to SSL client cert
+# - token: RBAC token string for PuppetDB
 # - cache_file: Where to store the inventory cache
 # - cache_duration: How long should cache persist until refreshed automatically
-# - group_by: Generate groups based on puppet fact values
+# - group_by: Comma separate list of fact names for creating ansible inventory groups
+# - create_unknown_group: Boolean for enabling creation of 'unknown' group (default: False)
+# - full_group_names: Create Descriptive Group names - `kernel - 3.2` rather than `3.2`
 #
 # == Notes on group_by
 # This will generate ansible-compatible groups based on fact values
@@ -49,13 +52,16 @@
 # always return a group called 'all' with all the hosts in it.
 #
 ---
-host: localhost
+host: 'localhost'
+token: ''
 port: 8080
 timeout: 10
 ssl_verify: False
-ssl_key:
-ssl_cert:
+ssl_key: None
+ssl_cert: None
 cache_file: '/tmp/ansible-inventory-puppetdb.cache'
 cache_duration: 30
+create_unknown_group: False
+full_group_names: False
 group_by:
 group_by_tag:
